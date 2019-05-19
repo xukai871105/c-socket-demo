@@ -67,8 +67,7 @@ int main(int argc, char *argv[])
     fd_set fdset;
     maxsockfd = sfd;
     struct timeval tout;
-
-
+    
     while (1)
     {
         FD_ZERO(&fdset);
