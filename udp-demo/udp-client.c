@@ -86,6 +86,6 @@ int main(int argc, char *argv[])
     } else {
         fprintf(stderr, "getnameinfo: %s\n", gai_strerror(s));
     }
-    
+
     exit(EXIT_SUCCESS);
 }
