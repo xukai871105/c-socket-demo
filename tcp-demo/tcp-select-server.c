@@ -10,9 +10,14 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <assert.h>
+#include <netdb.h>
 
 #define BUF_SIZE    1024
 
+/*
+编译 gcc tcp-select-server.c -o tcp-select-server
+运行 ./tcp-select-server 50018
+*/
 void print_sockaddr(struct sockaddr_in addr)
 {
     // 保存点分十进制的地址
@@ -27,6 +32,9 @@ void print_sockaddr(struct sockaddr_in addr)
 int main(int argc, char *argv[])
 {
     int sfd = -1;
+    struct addrinfo hints;
+    struct addrinfo *result;
+    struct addrinfo *rp;
 
     struct sockaddr_in server_addr;
     struct sockaddr_in client_addr;
@@ -43,15 +51,16 @@ int main(int argc, char *argv[])
     char recv_buf[BUF_SIZE];
     int port = 0;
 
+    if (argc != 2) {
+        fprintf(stderr, "usage: %s port\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    /*
     if ((sfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
         exit(EXIT_FAILURE);
     }
 
-    if (argc == 2) {
-        port = atoi(argv[1]);
-    } else {
-        port = 5678;
-    }
 
     printf("listen port %d, server_fd: %d  \n", port, sfd);
     setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof (optval));
@@ -69,6 +78,46 @@ int main(int argc, char *argv[])
     if (listen (sfd, 10) < 0) {
         printf("listen failed");
     }
+     */
+
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC;        /* 允许IPv4 或者 IPv6 */
+    hints.ai_socktype = SOCK_STREAM;    /* TCP */
+    hints.ai_flags = AI_PASSIVE;
+    hints.ai_protocol = 0;
+    hints.ai_canonname = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
+
+    int s = getaddrinfo(NULL, argv[1], &hints, &result);
+    if (s != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+        exit(EXIT_FAILURE);
+    }
+    for (rp = result; rp != NULL; rp = rp->ai_next) {
+        sfd = socket(rp->ai_family, rp->ai_socktype,
+                     rp->ai_protocol);
+        if (sfd == -1)
+            continue;
+
+        if ((setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR,
+                        &optval, sizeof (optval))) != 0)
+            continue;
+
+        if (bind(sfd, rp->ai_addr, rp->ai_addrlen) != 0)
+            continue;
+
+        if (listen (sfd, 5) != 0)
+            continue;
+
+        /* 成功 */
+        break;
+    }
+    if (rp == NULL) {
+        fprintf(stderr, "Could not bind\n");
+        exit(EXIT_FAILURE);
+    }
+    freeaddrinfo(result);
 
     FD_ZERO(&read_fds);
     FD_SET(sfd, &read_fds);
@@ -99,7 +148,7 @@ int main(int argc, char *argv[])
                 client_addrlen = sizeof(client_addr);
                 int cfd = accept(sfd, (struct sockaddr *)&client_addr,
                                  (socklen_t *)&client_addrlen);
-                printf("accept fd %d ", cfd);
+                printf("accept fd:%d ", cfd);
                 print_sockaddr(client_addr);
 
                 if (cfd < 0) {
@@ -111,21 +160,21 @@ int main(int argc, char *argv[])
                     max_sockfd = cfd;
                 }
             } else {
-                ssize_t len = recv(fd, recv_buf, sizeof(recv_buf), 0);
-                if (len <= 0) {
-                    printf ("client fd %d has left\n", fd);
+                ssize_t num_read = recv(fd, recv_buf, sizeof(recv_buf), 0);
+                if (num_read <= 0) {
+                    printf ("client has left fd:%d\n", fd);
                     close(fd);
                     FD_CLR(fd, &read_fds);
                     continue;
                 }
-                // printf("the client_ip : %s\n", inet_ntoa(client_addr.sin_addr));
-                recv_buf[len] = '\0';
-                printf("%s ", recv_buf);
+
+                recv_buf[num_read] = '\0';
+                printf("receive %zd bytes: \"%s\" from ", num_read, recv_buf);
                 peer_addrlen = sizeof(peer_addr);
                 getpeername(fd, (struct sockaddr *)&peer_addr, (socklen_t *)&peer_addrlen);
                 print_sockaddr(peer_addr);
 
-                send(fd, recv_buf, (size_t)len, 0);
+                send(fd, recv_buf, (size_t)num_read, 0);
             }
         }
     }

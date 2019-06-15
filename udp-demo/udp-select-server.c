@@ -55,17 +55,15 @@ int main(int argc, char *argv[])
         if (sfd == -1)
             continue;
 
-        if (bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
-            break;
+        if (bind(sfd, rp->ai_addr, rp->ai_addrlen) != 0)
+            continue;
 
-        close(sfd);
+        break;
     }
-
     if (rp == NULL) {
-        fprintf(stderr, "Could not bind\n");
+        fprintf(stderr, "could not bind\n");
         exit(EXIT_FAILURE);
     }
-
     freeaddrinfo(result);
 
     FD_ZERO(&read_fds);
