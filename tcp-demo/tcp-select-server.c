@@ -31,9 +31,14 @@ int main(int argc, char *argv[])
     struct sockaddr_in server_addr;
     struct sockaddr_in client_addr;
     struct sockaddr_in peer_addr;
+    fd_set read_fds;
+    fd_set work_fds;
+
+    struct timeval tout;
     int peer_addrlen;
     int client_addrlen;
-    int optval, maxsockfd;
+    int optval;
+    int max_sockfd;
 
     char recv_buf[BUF_SIZE];
     int port = 0;
@@ -65,22 +70,17 @@ int main(int argc, char *argv[])
         printf("listen failed");
     }
 
-    fd_set readfds;
-    fd_set workfds;
-    maxsockfd = sfd;
-    struct timeval tout;
-
-    FD_ZERO(&readfds);
-    FD_SET(sfd, &readfds);
-    FD_SET(STDIN_FILENO, &readfds);
+    FD_ZERO(&read_fds);
+    FD_SET(sfd, &read_fds);
+    FD_SET(STDIN_FILENO, &read_fds);
+    max_sockfd = sfd;
 
     while (1) {
-        struct timeval tout;
         tout.tv_sec = 2;
         tout.tv_usec = 0;
 
-        workfds = readfds;
-        int ret = select (maxsockfd + 1, &workfds, NULL, NULL, &tout);
+        work_fds = read_fds;
+        int ret = select (max_sockfd + 1, &work_fds, NULL, NULL, &tout);
 
         if (ret == 0) {
             continue;
@@ -89,8 +89,8 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        for (int i = 0; i < maxsockfd + 1; i++) {
-            if (!FD_ISSET(i, &workfds)) {
+        for (int i = 0; i < max_sockfd + 1; i++) {
+            if (!FD_ISSET(i, &work_fds)) {
                 continue;
             }
 
@@ -106,16 +106,16 @@ int main(int argc, char *argv[])
                     printf("accept cfd < 0!");
                     continue;
                 }
-                FD_SET(cfd, &readfds);
-                if (cfd > maxsockfd) {
-                    maxsockfd = cfd;
+                FD_SET(cfd, &read_fds);
+                if (cfd > max_sockfd) {
+                    max_sockfd = cfd;
                 }
             } else {
                 ssize_t len = recv(fd, recv_buf, sizeof(recv_buf), 0);
                 if (len <= 0) {
                     printf ("client fd %d has left\n", fd);
                     close(fd);
-                    FD_CLR(fd, &readfds);
+                    FD_CLR(fd, &read_fds);
                     continue;
                 }
                 // printf("the client_ip : %s\n", inet_ntoa(client_addr.sin_addr));
@@ -129,7 +129,6 @@ int main(int argc, char *argv[])
             }
         }
     }
-
 
     return EXIT_SUCCESS;
 }

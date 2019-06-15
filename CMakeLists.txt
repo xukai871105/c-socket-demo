@@ -10,3 +10,4 @@ add_executable(tcp-client tcp-demo/tcp-client.c)
 
 add_executable(udp-client udp-demo/udp-client.c)
 add_executable(udp-server udp-demo/udp-server.c)
+add_executable(udp-select-server udp-demo/udp-select-server.c)

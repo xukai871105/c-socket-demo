@@ -7,7 +7,7 @@
 #include <netdb.h>
 #include <time.h>
 
-#define BUF_SIZE 500
+#define BUF_SIZE 512
 
 /*
 编译 gcc udp-server.c -o udp-server
