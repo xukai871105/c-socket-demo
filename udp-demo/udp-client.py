@@ -2,7 +2,7 @@ import socket
 import binascii
 
 HOST = '127.0.0.1'
-PORT = 8018
+PORT = 50018
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # print("remote", (HOST, PORT), "local", s.getsockname())
 
