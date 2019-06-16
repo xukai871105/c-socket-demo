@@ -36,7 +36,6 @@ int main(int argc, char *argv[])
     struct addrinfo *result;
     struct addrinfo *rp;
 
-    struct sockaddr_in server_addr;
     struct sockaddr_in client_addr;
     struct sockaddr_in peer_addr;
     fd_set read_fds;
@@ -55,30 +54,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "usage: %s port\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-
-    /*
-    if ((sfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-        exit(EXIT_FAILURE);
-    }
-
-
-    printf("listen port %d, server_fd: %d  \n", port, sfd);
-    setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof (optval));
-
-    memset(&client_addr, 0, sizeof(client_addr));
-    memset(&server_addr, 0, sizeof (server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    if (bind (sfd, (struct sockaddr *) &server_addr, sizeof (server_addr)) < 0) {
-        printf("bind failed\n");
-    }
-
-    if (listen (sfd, 10) < 0) {
-        printf("listen failed");
-    }
-     */
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;        /* 允许IPv4 或者 IPv6 */
@@ -169,7 +144,7 @@ int main(int argc, char *argv[])
                 }
 
                 recv_buf[num_read] = '\0';
-                printf("receive %zd bytes: \"%s\" from ", num_read, recv_buf);
+                printf("receive %zd bytes: \"%s\" from fd:%d", num_read, recv_buf, fd);
                 peer_addrlen = sizeof(peer_addr);
                 getpeername(fd, (struct sockaddr *)&peer_addr, (socklen_t *)&peer_addrlen);
                 print_sockaddr(peer_addr);
